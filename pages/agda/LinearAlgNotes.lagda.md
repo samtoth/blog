@@ -5,12 +5,15 @@ open import Cat.Diagram.Everything
 open import Cat.Diagram.Product.Finite
 open import Cat.Instances.Comma
 open import Cat.Instances.Slice
+open import Cat.Instances.Delooping
 open import Cat.Functor.Adjoint
 open import Cat.Displayed.Univalence.Thin
 open import Cat.Functor.FullSubcategory
 open import Algebra.Ring
 open import Algebra.Group.NAry
+open import Algebra.Group.Ab
 open import Data.Nat renaming (Nat to ℕ; _+_ to _+N_; _*_ to _*ℕ_)
+   hiding (*-associative; +-associative)
 open import Data.Fin
 import Algebra.Ring.Module.Vec as VecM
 open import Algebra.Group
@@ -71,7 +74,7 @@ TODO: Section on motivation. What's it all about???
 
 ## Vectors
 
-[! def: Vector]
+> [! def: Vector]
 > Given an $n : \mathbb{N}$, $R^{n}$ denotes an $n$ dimensional $R$-vector.
 > $R^n$ is just the $n$-ary product of $R$'s.
 
@@ -313,9 +316,17 @@ $$
 
 An alternative characterisation of this fact is that a basis is a linear isomorphism
 between a module $M$ and a direct sum of copies of $R$ regarded as a module - 
-$M \xrightarrow{\sim} ⊕_{i\inℕ}\ R$. You might notice that $⊕_{i \in ℕ}R$ is actually
-just equivalent to our type $Vec_n$
+$M \xrightarrow{\sim} \oplus_{i\in I}\ R$. You might notice that when $I$ is a finite
+set, $\oplus_{i \in I}R$ is actually just equivalent to our type $Vec_n$.
 
+First the general case. We need to show that R-Mod has indexed products:
+
+```agda
+-- Direct-sum : ∀ {ℓ'} → has-indexed-products (R-Mod R ℓ) ℓ'
+-- Direct-sum F .Indexed-product.ΠF = {!   !}
+-- Direct-sum F .Indexed-product.π = {!   !}
+-- Direct-sum F .Indexed-product.has-is-ip = {!   !}
+```
 
 ```agda
 module _ (M : Module R ℓ) where
@@ -323,9 +334,10 @@ module _ (M : Module R ℓ) where
   has-dimension : ℕ → Type ℓ
   has-dimension dim = M R-Mod.≅ Fin-vec-module dim
 
-  Basis' : Type ℓ
-  Basis' = Σ[ dim ∈ ℕ ] has-dimension dim
+  Finite-Basis : Type ℓ
+  Finite-Basis = Σ[ dim ∈ ℕ ] has-dimension dim
 ```
+
 
 Due to univalence, this says that the only finite-dimensional modules are the vectors.
 This definition seems unmotivated, but, we can show that it is in fact equivalent to
@@ -353,23 +365,23 @@ Quotient Inductive Type). On finite sets of vectors it is equivalent to the Span
 the vectors.
 
 ```agda
-open Algebra.Ring.Module.Free R
+module _ where
+  open Algebra.Ring.Module.Free R
 
-_ : Functor (Sets ℓ) (R-Mod R ℓ)
-_ = Free-module {ℓ}
+  _ : Functor (Sets ℓ) (R-Mod R ℓ)
+  _ = Free-module {ℓ}
 
-_ : Free-module {ℓ} ⊣ Forget-module R ℓ
-_ = Algebra.Ring.Module.Free.Free⊣Forget R
+  _ : Free-module {ℓ} ⊣ Forget-module R ℓ
+  _ = Algebra.Ring.Module.Free.Free⊣Forget R
 ```
 
 ```agda
-module FreeM = Functor (Free-module {ℓ})
-module _ {n} {i} (v : Fin i → Vector n) where
+  module FreeM = Functor (Free-module {ℓ})
+  module _ {n} {i} (v : Fin i → Vector n) where
   -- S : Type ℓ
   -- S = image v
 
-  -- FiniteFree≅Span : ∀ {∃[ v ∈ (Fin i → Vector n) ]
-  --              LinearComb.RSpan n i v R-Mod.≅ FreeM.₀ (el! (image v))
+  -- FiniteFree≅Span : LinearComb.RSpan n i v R-Mod.≅ FreeM.₀ (el! (image v))
   -- FiniteFree≅Span = ?
 ```
 
@@ -398,24 +410,59 @@ record Basis (M : Module R ℓ) : Type (lsuc ℓ) where
     has-is-basis : is-basis M S i
 
   open is-basis has-is-basis public
+
+  is-finite : Type ℓ
+  is-finite = Finite ⌞ S ⌟
 ```
 
 ```agda
 module _ (M : Module R ℓ) where
 
-  Basis'→Basis : Basis' M → Basis M
-  Basis'→Basis (dim , p) = b where
-    open Basis
-    b : Basis M
-    b .S = {!   !}
-    b .i = {!   !}
-    b .has-is-basis = {!   !} 
+  -- Fin-Basis→Basis : Finite-Basis M → Basis M
+  -- Fin-Basis→Basis (dim , p) = b where
+  --   open Basis
+  --   b : Basis M
+  --   b .S = {!   !}
+  --   b .i = {!   !}
+  --   b .has-is-basis = {!   !} 
 
-  Basis→Basis' : Basis M → Basis' M
-  Basis→Basis' b = b' where
-    open Basis b
-
-    b' : Basis' M
-    b' = {!   !} , {!   !}
+  -- Basis-is-finite→Fin-Basis : (B : Basis M) → Basis.is-finite B → Finite-Basis M
+  -- Basis-is-finite→Fin-Basis b = {!   !}
 
 ```
+
+
+
+## Ab-presheaf interpretation
+
+### Oidification of rings
+
+Another word for Ab-category is a ringoid (usually reserved for when the category
+is small). This means that it is the horizontal categorification of a ring.
+You might be familiar with the (slightly tounge in cheek) name for (small) categories:
+Monoidoid - and there are many paralels we can draw here. Firstly, recall that a one
+object category is a monoid; in parralel a one object Ab-category is a ring.
+
+These are already constructs in the one lab:
+
+```agda
+_ : Precategory lzero ℓ
+_ = B (record {  _⋆_ = _*_ ; has-is-monoid = *-monoid }) -- B stands for delooping...
+                                                         -- for some reason....
+
+_ : Ab-category _
+_ = Ringoid
+
+```
+ 
+For $A$ and $B$ Ab-categories, the Ab-enriched-functor category $[A, B]$ is also
+an Ab-category. The Ab-analogue of presheafs is the category $[R^{op}, Ab]$, where
+R is some Ab-category and $Ab$, the Ab-category of abelian groups, takes the place
+of $Set$. This category is an 
+[Ableian Category](https://ncatlab.org/nlab/show/additive+and+abelian+categories).
+There are analogues between Abelian Category and Topoi that were explored by
+Freyd in his presentation of [AT-categories](https://ncatlab.org/nlab/show/AT+category)
+
+It turns out that when fixing R to be some ring, the category $RMod$ is
+actually equivalent to the ab-functor ab-category $[R^{op},Ab]$. And we will 
+now show a proof of this.
