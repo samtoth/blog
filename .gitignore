@@ -1,0 +1,5 @@
+_build
+.direnv
+.envrc
+result
+**/*.agdai
