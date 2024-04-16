@@ -1,0 +1,218 @@
+
+
+\begin{code}
+-- {-# OPTIONS --rewriting #-}
+module SynthHom where
+
+open import Agda.Primitive renaming (Set to 𝓤)
+
+variable
+    ℓ 𝓇 𝓈 : Level
+
+data 𝟘 : 𝓤 where
+
+record 𝟙 : 𝓤 where
+
+record Σ {ℓ 𝓇} (A : 𝓤 ℓ) (B : A → 𝓤 𝓇) : 𝓤 (ℓ ⊔ 𝓇) where
+    constructor _,_
+    field
+        fst : A
+        snd : B fst
+
+open Σ
+
+data ℕ : 𝓤 where
+    zero : ℕ
+    suc : ℕ → ℕ
+
+{-# BUILTIN NATURAL ℕ #-}
+
+⟨_,_⟩ : ∀ {A : 𝓤 ℓ} {B : A → 𝓤 𝓇} {X : 𝓤 𝓈} → (f : X → A) → ((x : X) → B (f x)) → (X → Σ A B)   
+⟨ f , g ⟩ a = (f a , g a)
+    
+Σ-univ : ∀ {A : 𝓤 ℓ} {B : A → 𝓤 𝓇} {X : 𝓤 𝓇} → (Σ (X → A) λ f → ((x : X) → B (f x))) → (X → Σ A B)
+Σ-univ sum = ⟨ fst sum , snd sum ⟩
+
+data  _＝_ {A : 𝓤 ℓ} (a : A) : A → 𝓤 ℓ where
+    refl : a ＝ a
+
+J : ∀ {A : 𝓤 ℓ} {x : A} (P : (a : A) → x ＝ a → 𝓤 𝓇) → P x refl → (y : A) (p : x ＝ y) → P y p
+J P x y refl = x
+
+ap : {A : 𝓤 ℓ} → {B : 𝓤 𝓇} {x y : A} → (f : A → B) → x ＝ y → f x ＝ f y
+ap {x = x} {y} f p = J (λ a _ → f x ＝ f a) refl y p
+
+_∙_ : ∀ {A : 𝓤 ℓ} → {a b c : A} → a ＝ b → b ＝ c → a ＝ c
+refl ∙ p = p
+
+_⁻¹ : ∀ {A : 𝓤 ℓ} → {a b : A} → a ＝ b → b ＝ a
+refl ⁻¹ = refl
+
+-- {-# BUILTIN REWRITE _＝_ #-}
+
+fibre : ∀ {X : 𝓤 ℓ} {Y : 𝓤 𝓇} → (X → Y) → Y → 𝓤 (ℓ ⊔ 𝓇)
+fibre {X = X} f y = Σ X λ x → f x ＝ y   
+
+is-contr : 𝓤 ℓ → 𝓤 ℓ
+is-contr A = Σ A λ a → (b : A) → a ＝ b  
+
+is-[_]-type : ℕ → 𝓤 ℓ → 𝓤 ℓ
+is-[ zero ]-type X = is-contr X
+is-[ suc n ]-type X = ∀ {x y : X} → is-[ n ]-type (x ＝ y)
+
+is-prop is-set : 𝓤 ℓ → 𝓤 ℓ
+is-prop = is-[ 1 ]-type
+is-set = is-[ 2 ]-type
+
+𝓤< : ℕ → (ℓ : Level) → 𝓤 (lsuc ℓ)
+𝓤< n ℓ = Σ (𝓤 ℓ) is-[ n ]-type
+
+record Underlying (A : 𝓤 ℓ) (U : 𝓤 𝓇) : 𝓤 (ℓ ⊔ 𝓇) where
+    field ⌞_⌟ : A → U
+
+open Underlying {{...}}
+
+instance
+    UnderlyingΣ : ∀ {A : 𝓤 ℓ} {B : A → 𝓤 𝓇} → Underlying (Σ A B) A
+    Underlying.⌞ UnderlyingΣ ⌟ = fst
+
+is-equiv : ∀ {X : 𝓤 ℓ} {Y : 𝓤 𝓇} → (f : X → Y) → 𝓤 (ℓ ⊔ 𝓇)
+is-equiv {Y = Y} f = (y : Y) → is-contr (fibre f y) 
+
+is-equiv→inverse : ∀ {X : 𝓤 ℓ} {Y : 𝓤 𝓇} → (f : X → Y) → is-equiv f → Y → X
+is-equiv→inverse f e y = fst (fst (e y))
+
+Equiv : 𝓤 ℓ → 𝓤 𝓇 → 𝓤 (ℓ ⊔ 𝓇)
+Equiv A B = Σ (A → B) is-equiv
+
+id : {A : 𝓤 ℓ} → A → A
+id x = x
+
+_∘_ : {A : 𝓤 ℓ} {B : 𝓤 𝓇} {C : 𝓤 𝓈} → (B → C) → (A → B) → A → C
+(f ∘ g) x = f (g x)
+
+
+
+idEquiv : ∀ {A : 𝓤 ℓ} → Equiv A A
+idEquiv = id , λ y → (y , refl) , (λ where (a , refl) → refl)
+
+idToEquiv : ∀ {X Y : 𝓤 ℓ} → X ＝ Y → Equiv X Y
+idToEquiv refl = idEquiv 
+
+record Identity (A : 𝓤 ℓ) (i : Level) : 𝓤 (ℓ ⊔ lsuc i) where
+    field Id       : A → A → 𝓤 i
+    field χ : ∀ {x y : A} → x ＝ y → Id x y
+    field χ-equiv : ∀ {x y : A} → is-equiv (χ {x} {y})
+
+    toPath : ∀ {x y : A} → Id x y → x ＝ y
+    toPath = is-equiv→inverse χ χ-equiv 
+ 
+open Identity {{...}}
+
+postulate
+    ua : ∀ {X Y : 𝓤 ℓ} → is-equiv (idToEquiv {X = X} {Y})
+
+-- instance
+--     trivId : {A : 𝓤 ℓ} → Identity A ℓ
+--     Identity.Id trivId = _＝_
+--     Identity.χ trivId = id
+--     Identity.χ-equiv trivId = idEquiv .snd
+
+-- {-# OVERLAPPABLE trivId #-}
+
+instance
+    pathId : Identity (𝓤 ℓ) ℓ
+    Identity.Id pathId = Equiv
+    Identity.χ pathId = idToEquiv
+    Identity.χ-equiv pathId = ua
+
+_*[_]_ : {A : 𝓤 ℓ} → {x y : A} → x ＝ y → (B : A →  𝓤 𝓇) → (x' : B x) → B y
+p *[ B ] x' = J (λ a _ → B a) x' _ p
+
+_*[_] : {A : 𝓤 ℓ} → {x y : A} → x ＝ y → (B : A →  𝓤 𝓇) → B x ＝ B y
+refl *[ B ] = refl
+
+*[]-is-equiv : {A : 𝓤 ℓ} → {x y : A} → (p : x ＝ y) → (B : A →  𝓤 𝓇) → is-equiv (p *[ B ]_)
+fst (*[]-is-equiv refl B y) = y , refl
+snd (*[]-is-equiv refl B y) (.y , refl) = refl
+
+equivToId : ∀  {X Y : 𝓤 ℓ} → Equiv X Y → X ＝ Y
+equivToId = toPath
+
+Σ-id : ∀ {A : 𝓤 ℓ} {B : A → 𝓤 𝓇} → Σ A B → Σ A B → 𝓤 (ℓ ⊔ 𝓇)
+Σ-id {B = B} x y = Σ (fst x ＝ fst y) λ p → (p *[ B ] (snd x)) ＝ snd y
+
+Σ-id-χ : ∀ {A : 𝓤 ℓ} {B : A → 𝓤 𝓇} → (x y : Σ A B) → x ＝ y → Σ-id x y
+Σ-id-χ x .x refl = refl , refl
+
+Σ-id-χ-equiv : ∀ {A : 𝓤 ℓ} {B : A → 𝓤 𝓇} {x y : Σ A B} → is-equiv (Σ-id-χ x y)
+Σ-id-χ-equiv {x = x1 , x2} {y = y1 , y2} (refl , refl) = (refl , refl) , λ where (refl , refl) → refl
+
+
+instance
+    Σ-Id : ∀ {A : 𝓤 ℓ} {B : A → 𝓤 𝓇} → Identity (Σ A B) (ℓ ⊔ 𝓇)
+    Identity.Id Σ-Id = Σ-id
+    Identity.χ Σ-Id = Σ-id-χ _ _
+    Identity.χ-equiv Σ-Id = Σ-id-χ-equiv
+
+postulate
+    inverse-equiv : ∀ {A : 𝓤 ℓ} {B : 𝓤 𝓇} → (f : A → B) → (e : is-equiv f) → is-equiv (is-equiv→inverse f e)
+-- fst (inverse-equiv f e x) = f x , ap fst (snd (e (f x)) (x , refl))
+-- snd (inverse-equiv f e x) b = toPath ({!   !} , {!   !})
+
+Equiv⁻¹ : ∀ {A : 𝓤 ℓ} {B : 𝓤 𝓇} → Equiv A B → Equiv B A
+Equiv⁻¹ (f , f-eq) = (is-equiv→inverse f f-eq , inverse-equiv f f-eq)
+    
+postulate funext : ∀ {A : 𝓤 ℓ} {B : A → 𝓤 𝓇} {f g : (a : A) → B a} → (∀ x → f x ＝ g x) → f ＝ g -- TODO
+-- funext {f = f} {g} p = {!    !}
+
+instance
+    Π-Id : ∀ {A : 𝓤 ℓ} {B : A → 𝓤 𝓇} → Identity ((x : A) → B x) (ℓ ⊔ 𝓇)
+    Identity.Id Π-Id f g = ∀ x → f x ＝ g x
+    Identity.χ Π-Id refl x = refl
+    Identity.χ-equiv Π-Id {f} {g} y = (funext y , cheat) , cheat  where
+        postulate cheat : ∀ {A : 𝓤 ℓ} → A -- TODO!!
+
+
+
+\end{code}  
+
+\section{Truncation}
+
+\begin{code}
+
+postulate
+    ∥_∥[_] : 𝓤 ℓ → ℕ → 𝓤 ℓ
+    ∣_∣[_] : {A : 𝓤 ℓ} → A → (n : ℕ) → ∥ A ∥[ n ]
+    ∥_∥[_]-out : (A : 𝓤 ℓ) → (n : ℕ) → {B : 𝓤< n 𝓇} → (A → ⌞ B ⌟) → (∥ A ∥[ n ] → ⌞ B ⌟)
+    ∥_∥[_]-out-equiv : (A : 𝓤 ℓ) → (n : ℕ) → {B : 𝓤< n 𝓇} → is-equiv (∥ A ∥[ n ]-out {B})
+
+∥_∥ : 𝓤 ℓ → 𝓤 ℓ
+∥ A ∥ = ∥ A ∥[ 1 ]
+
+∣-∣-comm : ∀ {n} {A : 𝓤 ℓ} {B : 𝓤< n 𝓇} → (f : A → ⌞ B ⌟) → f ＝ (∥ A ∥[ n ]-out {B} f ∘ ∣_∣[ n ])
+∣-∣-comm f = toPath (λ x → {!   !})
+
+is-[_]-connected : ℕ → 𝓤 ℓ → 𝓤 ℓ
+is-[ n ]-connected A = is-contr ∥ A ∥[ n ]
+
+-- record co-universal (A : 𝓤 ℓ) (B : 𝓤 𝓇) {{_ : Underlying B (𝓤 𝓈)}} : 𝓤 (lsuc ℓ ⊔ 𝓇 ⊔ 𝓈) where
+--     field Rep  : 𝓤 ℓ
+--     field ι   : Rep → A
+--     field elim : ∀ {b : B} → (Rep → ⌞ b ⌟) → (A → ⌞ b ⌟)
+--     field elim-equiv : ∀ {b : B} → is-equiv (elim {b})
+
+--     commutes : ∀ {b : B} → (f : Rep → ⌞ B ⌟) → f ＝ ι
+
+-- open co-universal {{...}}
+
+-- instance
+--     ∥-∥-univ : ∀ {A : 𝓤 ℓ} {n : ℕ} → co-universal ∥ A ∥[ n ] (𝓤< n 𝓇)
+--     co-universal.Rep (∥-∥-univ {A = A}) = A
+--     co-universal.ι ∥-∥-univ = ∣_∣[ _ ]
+--     co-universal.elim ∥-∥-univ {b} = ∥ _ ∥[ _ ]-out {b}
+--     co-universal.elim-equiv ∥-∥-univ = ∥ _ ∥[ _ ]-out-equiv
+
+ 
+  
+\end{code} 

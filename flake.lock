@@ -3,16 +3,17 @@
     "agda": {
       "flake": false,
       "locked": {
-        "lastModified": 1706717132,
-        "narHash": "sha256-jUFEz+0ta59T4tu9V52KsdfyqUIKQeWzW81L2eklC1o=",
+        "lastModified": 1711538111,
+        "narHash": "sha256-laM5s1F6NnPmejSHQiTvjd0G+9TJTAUJv6sbsLSHKyc=",
         "owner": "agda",
         "repo": "agda",
-        "rev": "e7203bfd0ab1a59dcafa7f20c0ecb4552ee4a8de",
+        "rev": "403ee4263e0f14222956e398d2610ae1a4f05467",
         "type": "github"
       },
       "original": {
         "owner": "agda",
         "repo": "agda",
+        "rev": "403ee4263e0f14222956e398d2610ae1a4f05467",
         "type": "github"
       }
     },
@@ -21,11 +22,11 @@
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1705309234,
-        "narHash": "sha256-uNRRNRKmJyCRC/8y1RqBkqWBLM034y4qN7EprSdmgyA=",
+        "lastModified": 1710146030,
+        "narHash": "sha256-SZ5L6eA7HJ/nmkzGG7/ISclqe6oZdOZTNoesiInkXPQ=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "1ef2e671c3b0c19053962c07dbda38332dcebf26",
+        "rev": "b1d9ab70662946ef0850d488da1c9019f3a9752a",
         "type": "github"
       },
       "original": {
@@ -36,33 +37,34 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1706550542,
-        "narHash": "sha256-UcsnCG6wx++23yeER4Hg18CXWbgNpqNXcHIo5/1Y+hc=",
+        "lastModified": 1701915650,
+        "narHash": "sha256-2XqL3Zq0zyItMm2Lb7fhvqpu6JhIkNreJ6QLP6xDp54=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "97b17f32362e475016f942bbdfda4a4a72a8a652",
+        "rev": "6cfbf89825dae72c64188bb218fd4ceca1b6a9e3",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
-        "ref": "nixos-unstable",
         "repo": "nixpkgs",
+        "rev": "6cfbf89825dae72c64188bb218fd4ceca1b6a9e3",
         "type": "github"
       }
     },
     "onelab": {
       "flake": false,
       "locked": {
-        "lastModified": 1706703144,
-        "narHash": "sha256-idLKI6PvtzJAhfJVFTJ6KP1V4xozAUTaegzGRhYylmY=",
+        "lastModified": 1712697545,
+        "narHash": "sha256-DMK/H+N8d1ywPEs6PaEvf1BsA8Zpa/CdyQOpPnGyi0c=",
         "owner": "plt-amy",
         "repo": "1lab",
-        "rev": "8e80bdbb72cee0fcf9efe3e842a7b506763699cb",
+        "rev": "caf71247aa81493629cb89767e19103647ace0f2",
         "type": "github"
       },
       "original": {
         "owner": "plt-amy",
         "repo": "1lab",
+        "rev": "caf71247aa81493629cb89767e19103647ace0f2",
         "type": "github"
       }
     },

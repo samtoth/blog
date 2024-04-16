@@ -2,17 +2,17 @@
   description = "Sam's agda blog";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/6cfbf89825dae72c64188bb218fd4ceca1b6a9e3";
     # systems.url = "github:nix-systems/default";
     flake-utils.url = "github:numtide/flake-utils";
     agda = {
-      url = "github:agda/agda";
-      # rev = "8ede3561ae32257eb7a102b8301c61fae1debb23";
-      # sha256 = "0iwif4ix47974j5mnq24a2afhgc03y0gp977bn0vsb3ics8dg6bz";
+      # url = "github:agda/agda";
+      url = "github:agda/agda/403ee4263e0f14222956e398d2610ae1a4f05467";
+      # sha256 = "09rbhysb06xbpw4hak69skxhdpcdxwj451rlgbk76dksa6rkk8wm";
       flake = false;
     };
     onelab = {
-      url = "github:plt-amy/1lab";
+      url = "github:plt-amy/1lab/d2c0e8824797353b59eb25eaa9d14cd8981830df";
       flake = false;
     };
   };
@@ -30,10 +30,14 @@
             (pkgs: prev: {
               haskellPkgs = prev.haskell.packages.ghc946.override (old: {
                 overrides = self: super: {
-                  Agda = super.callCabal2nix "Agda" agda "-f optimise-heavily -f debug" {};
+                  Agda = pkgs.haskell.lib.overrideCabal (super.callCabal2nixWithOptions "Agda" inputs.agda "-f optimise-heavily -f debug" {}) {
+                      doCheck = false;
+                      doHaddock = false;
+                      testHaskellDepends = [];
+                    };
                 };});
             })
-            ]; };
+            ];};
           # pkgs = nixpkgs.legacyPackages."${system}";
           agda = pkgs.agdaPackages.override {
             Agda = pkgs.haskellPkgs.Agda;
@@ -84,6 +88,9 @@
 
                 meta = {};
               };
+          myGhc = pkgs.haskellPkgs.ghcWithPackages (ps: with ps; ([
+              shake Agda haskell-language-server
+            ]));
         in with pkgs; {
           packages.agdaParts = agdaPackages.callPackage ({ lib, mkDerivation }: mkDerivation {
             name = "samsAgdaNotes";
@@ -109,12 +116,22 @@
               packages = [  ];
           };
 
+          devShells.site = mkShell {
+            inputsFrom = [    
+              self.packages."${system}".site 
+            ];
+
+            packages = [  ];
+          };
+
           packages.site = stdenv.mkDerivation {
             name = "sam's-blog";
             src = ./.;
 
+            buildInputs = [ myGhc ];
+
             buildCommand = ''
-              touch $out
+              touch $out 
             '';
           };
 
