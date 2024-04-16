@@ -15,6 +15,7 @@ open import Algebra.Group.Ab
 open import Data.Nat renaming (Nat to ℕ; _+_ to _+N_; _*_ to _*ℕ_)
    hiding (*-associative; +-associative)
 open import Data.Fin
+open import Data.Dec.Base
 import Algebra.Ring.Module.Vec as VecM
 open import Algebra.Group
 open import Algebra.Ring.Module
@@ -25,6 +26,7 @@ import Algebra.Ring.Module.Free
 open import Cat.Abelian.Base
 import Cat.Abelian.Images
 open import 1Lab.Function.Embedding
+open import Cat.Functor.Adjoint
 ```
 --->
 # Maths for Computer Scientists 2: Linear Algebra
@@ -38,6 +40,11 @@ module LinearAlgNotes {ℓ} (R : Ring ℓ) where
 
 open Ring-on (R .snd) hiding (_↪_)
 open VecM R
+module FreeM where
+  open Algebra.Ring.Module.Free R public
+  open Functor (Free-module {ℓ}) public
+  ^ : ∀ {S : Set ℓ} {M : Module R ℓ} → (⌞ S ⌟ → ⌞ M ⌟) → R-Mod.Hom (F₀ S) M
+  ^ {S} {M} f = R-adjunct (Algebra.Ring.Module.Free.Free⊣Forget R {ℓ}) {S} {M} f
 
 R-number : Number ⌞ R ⌟
 R-number .Number.Constraint = λ x → Lift _ ⊤
@@ -59,15 +66,21 @@ R-negative .Negative.fromNeg n = go n where
 private instance
   Rneg : Negative ⌞ R ⌟
   Rneg = R-negative
+  
+postulate
+  R-Mod-is-ab : is-abelian (R-Mod R ℓ) -- Working on it!!! :(
 
+module RAb where
+  open Cat.Abelian.Images {C = R-Mod R ℓ} R-Mod-is-ab public
+  open is-abelian R-Mod-is-ab public
 
 ```
 
 Although in the lectures most of the examples are given in terms of $\mathbb{R}$,
-due to it being complicated to work with, and with the goal of generality in mind,
-I have parameterized this document over an arbritary ring, denoted by $R$. As and
-when we need to upgrade R to a field or division ring etc. we can add that requirment
-as a module argument.
+due to reals being complicated to work with (and even construct), and with the goal
+of generality in mind, I have parameterized this document over an arbritary ring,
+denoted by $R$. For most of the theorems we need a field so we can add that 
+requirement as a module argument.
 
 
 TODO: Section on motivation. What's it all about???
@@ -231,29 +244,31 @@ linear-combination is not just a function, but a linear map.
 ```
 
 I have stopped short of showing that Span with these $+$ and $⋆$ gives rise to a module, because
-there is another construction of Span that will make these things go through by definition. When
-the linear combination is considered as a morphism $f : Vec_i \to Vec_n$ in $\mathrm{RMod}$,
-we take $span\ v$ to be the image of $f$. (We have images in $RMod$ because it is an
-[ab category](./RMod-Ab).
+there is another - more general - construction of Span that directly constructs it as a
+subspace. The general Span of any function in set $f : S → |R|$ is constructed as the image of 
+the action of the free module functor on $f$.
+(We have images in $RMod$ because it is an [ab category](./RMod-Ab.lagda.md)).
+When the linear combination is considered as a morphism $f : Vec_i \to Vec_n$ in
+$\mathrm{RMod}$, then we have the classic definition of $span\ v$ beinig equavalent to this
+more general span of $f$.   
 
 ```agda
-  postulate
-    R-Mod-is-ab : is-abelian (R-Mod R ℓ) -- Working on it!!! :(
+module Span (M : Module R ℓ) {S : Set ℓ} (ι : ⌞ S ⌟ → ⌞ M ⌟) where
 
-  module RAb = Cat.Abelian.Images {C = R-Mod R ℓ} R-Mod-is-ab
-  module RSpan = Image (R-Mod R ℓ) 
-      (RAb.images (linear-map→hom $ linear-extension (Fin-vec-module _) v))
+  ι^ : R-Mod.Hom (FreeM.₀ S) M
+  ι^ = R-adjunct (FreeM.Free⊣Forget {ℓ}) {S} {M} ι
+
+  module RSpan = Image (R-Mod R ℓ) (RAb.images ι^)
 
   RSpan : R-Mod.Ob
   RSpan = RSpan.Im
 ```
-Using the categorical notion of RSpan we can easily show that RSpan is a submodule of
-$Vec_n$.
+Using the categorical notion of RSpan we can easily show that RSpan is a subspace of
+$M$.
 
 ```agda
-  RSpan-submodule : RSpan R-Mod.↪ Fin-vec-module n
+  RSpan-submodule : RSpan R-Mod.↪ M
   RSpan-submodule = record { mor = RSpan.Im→codomain ; monic = RSpan.Im→codomain-is-M }
-
 ```
 
 Linear combinations can be used to represent systems of linear equations. For example,
@@ -277,12 +292,20 @@ $$
 ```agda
 LinearEquation : ∀ i n → Type ℓ
 LinearEquation i n = (Fin i → Vector n) × Vector n
+```
 
+A system of the form $Ax = 0$ is called homogeneous and in-homogeneous otherwise.
+
+```agda
 Solution : ∀ {i n} → LinearEquation i n → Type ℓ
 Solution {i} {n} (v , b) = fibre linear-combination b
  where open LinearComb n i v
 ```
-You might notice that the type `Solution` is just a repackaging of the data of span.
+
+If a system of equations $A$ is homogeneous, then `Solution A` is a subspace.
+
+The `Solution` type is in general a subtype of $R^n$ - but not a subspace.
+
 A linear equation is called consistent iff it's span is inhabited and otherwise it's
 called inconsistent.
 
@@ -291,12 +314,35 @@ In HoTT this translates to the type of solutions being *merely* inhabited.
 ```agda
 is-consistent : ∀ {i n} → LinearEquation i n → Type ℓ
 is-consistent x = ∥ Solution x ∥
-
-is-consistent-is-prop : ∀ {i n} → (eq : LinearEquation i n) → is-prop (is-consistent eq)
-is-consistent-is-prop eq = hlevel!
 ```
 
+If a System $S$ of form $Ax = b$ is consistent, then the Solution set of $S$
+is of the form $\{x_0 + x | x_0 : M, x : Solution (Ax = 0)\}$.
+
 See [[Examples]] to see how this works through for some arbritary linear equation.
+
+It is decidable whether a system of equations has a unique solution just when
+$R$ has decidable equality.
+
+```agda
+-- unique-solution-decidable : Discrete ⌞ R ⌟ → Dec (is-contr Solution)
+-- unique-solution-decidable = ?
+```
+
+## Matrix algebra
+
+Matrix multiplication is a linear map:
+
+ - $A(x + y) = Ax + Ay$
+ - $A(\iota x)$
+
+----
+
+   Ax = b has a solution
+ $\iff$ $Span\{v_1,...,v_n\} = R^n$ 
+ $\iff$ $RREF(A)$ has a pivot in every row
+ $RREF(A|b) = A'|b'$
+
 
 ## Bases
 ```agda
@@ -352,9 +398,11 @@ you can think of this like a redundancy in the coordinate system.
 
 The standard definition states that for a set of vectors to be linearly independant
 a linear combination $\sum_i^n{a_iv_i} = 0\ \textit{iff}\ \ \forall i.\ a_i = 0$.
+Another way of statating this is that the solution set of the homogeneous system
+of equations given by a matrix of collumns $v_i$, has a unique soloution - the trivial
+one. 
 
-Note that due to this definition relying on linear combinations, it only applies to
-finite sets. There is another very elegant definition which makes use of the free
+There is another very elegant definition which makes use of the free
 functor from $Sets \to RMods$.
 
 #### Free functor
@@ -367,16 +415,14 @@ the vectors.
 ```agda
 module _ where
   open Algebra.Ring.Module.Free R
-
   _ : Functor (Sets ℓ) (R-Mod R ℓ)
   _ = Free-module {ℓ}
 
   _ : Free-module {ℓ} ⊣ Forget-module R ℓ
-  _ = Algebra.Ring.Module.Free.Free⊣Forget R
+  _ = FreeM.Free⊣Forget
 ```
 
 ```agda
-  module FreeM = Functor (Free-module {ℓ})
   module _ {n} {i} (v : Fin i → Vector n) where
   -- S : Type ℓ
   -- S = image v
@@ -387,27 +433,29 @@ module _ where
 
 #### Linear independace - freely!
 
-So now given module $M$ over $R$, and a subset $S \subseteq |M|$. Consider the action of 
+So now given module $M$ over $R$, and a subtype $S \subseteq |M|$. Consider the action of 
 the free functor $F$ on the subset inclusion $i_s : S \hookrightarrow |M|$. Which gives
-us a not-necisarrily mono module homomorphism $F\ i : R S \to M$. The subset $S$ is 
+us a not-necisarrily mono module homomorphism $F\ i : R[S] \to M$. The subset $S$ is 
 linearly independant just when $F\ i$ is monic. 
 
 ```agda
 linearly-independant : (M : Module R ℓ) → (S : Σ[ S ∈ Set ℓ ] (⌞ S ⌟ ↪ ⌞ M ⌟)) → Type (lsuc ℓ)
-linearly-independant (M , _) (S , (i , _)) = R-Mod.is-monic (FreeM.₁ {S} {M} i)
+linearly-independant M (S , (i , _)) = R-Mod.is-monic (FreeM.^ {S} {M} i)
 ``` 
 
 ```agda
-record is-basis (M : Module R ℓ) (S : Set ℓ) (i : ⌞ S ⌟ ↪ ⌞ M ⌟) : Type (lsuc ℓ) where
-  field lid      : linearly-independant M (S , i)
-  field spanning : FreeM.₀ S R-Mod.≅ M
+record is-basis (M : Module R ℓ) (S : Set ℓ) (ι : ⌞ S ⌟ ↪ ⌞ M ⌟) : Type (lsuc ℓ) where
+  open Span M {S}
+
+  field lid      : linearly-independant M (S , ι)
+  field spanning : RSpan (ι .fst) R-Mod.≅ M
 
 
 record Basis (M : Module R ℓ) : Type (lsuc ℓ) where
   field 
     {S} : Set ℓ
-    i : ⌞ S ⌟ ↪ ⌞ M ⌟
-    has-is-basis : is-basis M S i
+    ι : ⌞ S ⌟ ↪ ⌞ M ⌟
+    has-is-basis : is-basis M S ι
 
   open is-basis has-is-basis public
 
@@ -427,11 +475,48 @@ module _ (M : Module R ℓ) where
   --   b .has-is-basis = {!   !} 
 
   -- Basis-is-finite→Fin-Basis : (B : Basis M) → Basis.is-finite B → Finite-Basis M
-  -- Basis-is-finite→Fin-Basis b = {!   !}
+  -- Basis-is-finite→Fin-Basis b finite = cardinality {{finite}} , {!  !}
+  --   where 
+  --     open Basis b
 
+  --     equiv : Span.RSpan M (ι .fst) R-Mod.≅ Fin-vec-module _
+  --     equiv ._≅_.to = {!   !}
+  --     equiv ._≅_.from = {!   !}
+  --     equiv ._≅_.inverses = {!   !}
 ```
 
+## Col space and null space
 
+Given a Matrix A, the col space is the span of the columns of a matrix. It is equivalent
+to the image of A regarded as a morphism in $\textrm{R-Mod}$.
+
+The null space is the Solution space to $Ax = 0$. This is equivalent to the kernal of A regarded
+as a $\textrm{R-Mod}$ morphism. (The kernal of a morphism is the inverse image at 0)
+
+ - The col space us unchanged if we remove columns without pivots.
+ - A non-pivot col belongs to span of cols to the left.
+ - The pivot cols are linearly independant
+
+The Rank of A is the dimension of the col space.
+The nullity of A is the dimension of the null space.
+
+```agda
+Col : ∀ {V W} → R-Mod.Hom V W → R-Mod.Ob
+Col A = Image.Im _ (RAb.images A)
+```
+
+```agda
+Null : ∀ {V W} → R-Mod.Hom V W → R-Mod.Ob
+Null A = Kernel.ker (RAb.kernel A)
+```
+
+#### Grassmann's formula
+**Thm:** for $A : V \to W$ with finite V, W. $rank(A) + nl(A) = dim(W)$ 
+
+Given, $ι_u : U \rightarrow R^n,ι_v : V \to R^n$, Def:
+ $U + V := \{v + u | v \in V, u \in U\}$
+
+$dim U + dim V = dim (U + V) + dim (U ∩ V)$
 
 ## Ab-presheaf interpretation
 
@@ -465,4 +550,4 @@ Freyd in his presentation of [AT-categories](https://ncatlab.org/nlab/show/AT+ca
 
 It turns out that when fixing R to be some ring, the category $RMod$ is
 actually equivalent to the ab-functor ab-category $[R^{op},Ab]$. And we will 
-now show a proof of this.
+now show a proof of this. 
