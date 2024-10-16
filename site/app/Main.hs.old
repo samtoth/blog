@@ -1,0 +1,85 @@
+{-# OPTIONS_GHC -Wno-typed-holes #-}
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE TypeFamilies #-}
+module Main where
+
+import System.FilePath
+import System.Process
+import System.Environment
+import Control.Monad
+import System.Console.GetOpt
+
+import Development.Shake.FilePath
+import Development.Shake
+import Development.Shake.Classes
+
+import GHC.Generics (Generic)
+import Data.Map.Strict qualified as Map
+import Data.Map.Strict (Map)
+import Data.List
+
+data ModulesQ = ModulesQ
+  deriving (Eq, Show, Typeable, Generic)
+
+instance Hashable ModulesQ where
+instance Binary ModulesQ where
+instance NFData ModulesQ where
+
+
+type ModName = String 
+
+-- | The kind of a module.
+data ModKind
+  = WithText
+  | CodeOnly
+  deriving (Eq, Ord, Show, Typeable, Generic)
+
+instance Hashable ModKind where
+instance Binary ModKind where
+instance NFData ModKind where
+
+newtype ModulesA = ModulesA { unModulesA :: Map ModName ModKind }
+  deriving (Eq, Ord, Show, Typeable, Generic)
+
+instance Hashable ModulesA where
+  hashWithSalt salt (ModulesA mod) = hashWithSalt salt (Map.toAscList mod)
+
+instance Binary ModulesA where
+instance NFData ModulesA where
+
+type instance RuleResult ModulesQ = ModulesA
+
+rules :: Rules ()
+rules = do
+  void $ addOracle \ModulesQ -> do
+    files <- getDirectoryFiles "pages/agda" ["**/*.agda", "**/*.lagda.md"]
+    let 
+        moduleName = intercalate "." . splitDirectories
+        toOut x | takeExtensions x == ".lagda.md"
+                = (moduleName (dropExtensions x), WithText)
+        toOut x = (moduleName (dropExtensions x), CodeOnly)
+    return $ ModulesA . Map.fromList . map toOut $ files
+    
+
+  "_build/all_pages.agda" %> \out -> do
+    modules <- Map.toList . unModulesA <$> askOracle ModulesQ
+    let f (x, WithText) = x ++ " -- (text page)"
+        f (x, CodeOnly) = x ++ " -- (code only)"
+    writeFileLines out $ ["open import " ++ f x | x <- modules]
+
+  phony "everything" do
+    void $ need ["_build/all_pages.agda"]
+
+
+main :: IO ()
+main = do
+  args <- getArgs
+  when ("--help" `elem` args || "-h" `elem` args) $ do
+    putStrLn $ usageInfo "shake" opts
+
+  shakeArgs shakeOptions{shakeFiles="_build"} rules
+    
+
+  where
+    opts :: [OptDescr w]
+    opts = []

@@ -1,204 +1,94 @@
 {
-  description = "Sam's agda blog";
+  description = "hakyll-nix-template";
 
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/6cfbf89825dae72c64188bb218fd4ceca1b6a9e3";
-    # systems.url = "github:nix-systems/default";
-    flake-utils.url = "github:numtide/flake-utils";
-    agda = {
-      # url = "github:agda/agda";
-      url = "github:agda/agda/403ee4263e0f14222956e398d2610ae1a4f05467";
-      # sha256 = "09rbhysb06xbpw4hak69skxhdpcdxwj451rlgbk76dksa6rkk8wm";
-      flake = false;
-    };
-    onelab = {
-      url = "github:plt-amy/1lab/d2c0e8824797353b59eb25eaa9d14cd8981830df";
-      flake = false;
-    };
+  nixConfig = {
+    allow-import-from-derivation = "true";
+    bash-prompt = "[hakyll-nix]λ ";
+    extra-substituters = [
+      "https://cache.iog.io"
+    ];
+    extra-trusted-public-keys = [
+      "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
+    ];
   };
 
-  outputs = inputs@{
-      self,
-      nixpkgs,
-      flake-utils,
-      agda,
-      onelab,
-      ...
-    }: flake-utils.lib.eachDefaultSystem (system: 
-        let
-          pkgs = import nixpkgs { inherit system; overlays = [
-            (pkgs: prev: {
-              haskellPkgs = prev.haskell.packages.ghc946.override (old: {
-                overrides = self: super: {
-                  Agda = pkgs.haskell.lib.overrideCabal (super.callCabal2nixWithOptions "Agda" inputs.agda "-f optimise-heavily -f debug" {}) {
-                      doCheck = false;
-                      doHaddock = false;
-                      testHaskellDepends = [];
-                    };
-                };});
-            })
-            ];};
-          # pkgs = nixpkgs.legacyPackages."${system}";
-          agda = pkgs.agdaPackages.override {
-            Agda = pkgs.haskellPkgs.Agda;
-          };
-          proper-1lab = mkDerivation: mkDerivation {
-                pname = "1lab";
-                name = "1lab";
-                src = onelab.outPath;
+  inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
+  inputs.nixpkgs.follows = "haskellNix/nixpkgs-unstable";
+  inputs.flake-utils.url = "github:numtide/flake-utils";
 
-                postPatch = ''
-                  # We don't need anything in support; avoid installing LICENSE.agda
-                  # rm -rf support
-
-
-                  echo "module Everything where" > src/Everything.agda
-
-                  echo "import index" >> src/Everything.agda
-
-                  find src/ -type f -name 'Solver.agda' | \
-                    sort | \
-                    sed -re 's@src/@@g;s@.agda@@g;s@/@.@g;s@^@import @g;s@$@@g' \
-                    >> src/Everything.agda
-
-                  # Remove verbosity options as they make Agda take longer and use more memory.
-                  shopt -s globstar extglob
-                  sed -Ei '/OPTIONS/s/ -v ?[^ #]+//g' src/**/*.@(agda|lagda.md)
-                '';
-
-                everythingFile = "src/Everything.agda";
-
-                libraryName = "1lab";
-                libraryFile = "1lab.agda-lib";
-
-                GHCRTS = "-M5G";
-
-                meta = {};
-              };
-          local-1lab = mkDerivation: mkDerivation {
-                pname = "1lab";
-                name = "1lab";
-                src = /home/samt/Projects/1lab;
-
-                libraryName = "1lab";
-                libraryFile = "1lab.agda-lib";
-
-                GHCRTS = "-M5G";
-                everythingFile = "src/index.lagda.md";
-
-                meta = {};
-              };
-          myGhc = pkgs.haskellPkgs.ghcWithPackages (ps: with ps; ([
-              shake Agda haskell-language-server
-            ]));
-        in with pkgs; {
-          packages.agdaParts = agdaPackages.callPackage ({ lib, mkDerivation }: mkDerivation {
-            name = "samsAgdaNotes";
-            pname = "blog";
-
-            buildInputs = [
-              (proper-1lab mkDerivation)
-            ];
-
-            src = ./.;
-
-            meta = {
-              name = "agdaNotes";
-            };
-          }) {};
-
-          devShells.default = mkShell {
-              inputsFrom = [    
-                self.packages."${system}".agdaParts
-                self.packages."${system}".site 
+  outputs = { self, nixpkgs, flake-utils, haskellNix }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        overlays = [ haskellNix.overlay
+          (final: prev: {
+            hakyllProject = final.haskell-nix.project' {
+              src = ./site;
+              compiler-nix-name = "ghc948";
+              modules = [{ doHaddock = false; }];
+              shell.buildInputs = [
+                hakyll-site
               ];
+              shell.tools = {
+                cabal = "latest";
+                hlint = "latest";
+                haskell-language-server = "latest";
+              };
+            };
+          })
+        ];
 
-              packages = [  ];
+        pkgs = import nixpkgs {
+          inherit overlays system;
+          inherit (haskellNix) config;
+        };
+
+        flake = pkgs.hakyllProject.flake {};
+
+        executable = "blog:exe:hakyll-site";
+
+        hakyll-site = flake.packages.${executable};
+
+        website = pkgs.stdenv.mkDerivation {
+          name = "website";
+          buildInputs = [];
+          src = pkgs.nix-gitignore.gitignoreSourcePure [
+            ./.gitignore
+            ".git"
+            ".github"
+          ] ./.;
+
+          # LANG and LOCALE_ARCHIVE are fixes pulled from the community:
+          #   https://github.com/jaspervdj/hakyll/issues/614#issuecomment-411520691
+          #   https://github.com/NixOS/nix/issues/318#issuecomment-52986702
+          #   https://github.com/MaxDaten/brutal-recipes/blob/source/default.nix#L24
+          LANG = "en_US.UTF-8";
+          LOCALE_ARCHIVE = pkgs.lib.optionalString
+            (pkgs.buildPlatform.libc == "glibc")
+            "${pkgs.glibcLocales}/lib/locale/locale-archive";
+
+          buildPhase = ''
+            ${flake.packages.${executable}}/bin/hakyll-site build --verbose
+          '';
+
+          installPhase = ''
+            mkdir -p "$out/dist"
+            ls -a
+            cp -a dist/. "$out/dist"
+          '';
+        };
+
+      in flake // rec {
+        apps = {
+          default = flake-utils.lib.mkApp {
+            drv = hakyll-site;
+            exePath = "/bin/hakyll-site";
           };
+        };
 
-          devShells.site = mkShell {
-            inputsFrom = [    
-              self.packages."${system}".site 
-            ];
-
-            packages = [  ];
-          };
-
-          packages.site = stdenv.mkDerivation {
-            name = "sam's-blog";
-            src = ./.;
-
-            buildInputs = [ myGhc ];
-
-            buildCommand = ''
-              touch $out 
-            '';
-          };
-
-          packages.default = self.packages."${system}".site;
-
-        });
-}  
-    
-    
-    
-    # flake-parts.lib.mkFlake { inherit inputs; } {
-    #   systems = import systems;
-    #   perSystem = { self', config, pkgs, system, ... }: 
-    #   let 
-    #     haskellPkgs = pkgs.haskell.packages.ghc946.extend (old: {
-    #       overrides = self: super: {
-    #         Agda = super.callCabal2nix "Agda" agda "-f optimise-heavily -f debug" {};
-    #       };});
-    #     ghc = interactive: haskellPkgs.ghcWithPackages (ps: with ps; ([
-    #       Agda shake pandoc
-    #     ] ++ (if interactive then [ haskell-language-server ] else [])));
-
-    #   in {
-    #     packages.blogShake = haskellPkgs.callCabal2nix "blog" ./site/blog.cabal {};
-
-    #     packages.staticSite = pkgs.stdenv.mkDerivation {
-    #       name = "blog";
-    #       src = ./.;
-    #       # nativeBuildInputs = [
-    #       #   self'.packages.blogShake
-    #       # ];
-
-    #       LANG = "C.UTF-8";
-    #       buildPhase = ''
-    #         touch $out
-    #       '';
-    #     };
-
-    #     packages.default = self'.packages.staticSite;
-    #   };
-    # };
-
-
-    # let 
-    #     pkgs = import nixpkgs { inherit system; };
-    # in with pkgs; {
-    #   packages.${system} = {
-    #     default = stdenv.mkDerivation {
-    #       name = "sam's-blog";
-    #       src = ./.;
-
-    #       buildCommand = ''
-    #         touch $out
-    #       '';
-    #     };
-    #   };
-
-    #   devShells.${system} = {
-    #     default = mkShell {
-    #       inputsFrom = [ol];
-    #       agda-libs = pkgs.writeTextDir "libraries" ''
-    #         ${ol.src}/1lab.agda-lib
-    #       '';
-
-    #       shellHook = ''
-    #         export AGDA_DIR=${self.devShells.${system}.default.agda-libs}
-    #       '';
-    #     };
-    #   };
-    # };
+        packages = {
+          inherit hakyll-site website;
+          default = website;
+        };
+      }
+    );
+}
