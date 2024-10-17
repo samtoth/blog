@@ -1,0 +1,194 @@
+<h1
+id="foldr-datatypes-and-scary-sounding-but-not-so-scary-f-algebras">Foldr,
+datatypes and (scary sounding but not so scary) F-algebras</h1>
+<h2 id="recap-on-haskell-data-types-and-polynomials">Recap on Haskell
+data types and polynomials</h2>
+<p>As we learnt in the lectures, Haskell has a feature called algabraic
+data types. What this means is that there are product types, the tuples
+(including the empty tuple <code>()</code>), as well as sum types,
+written in Haskell with the bar notation
+<code>data MyType = A | B</code>. They can be thought of as something
+like an ‘or’ type.(*1)</p>
+<p>There exists an alternative notation for data types which hints at a
+suggestion to something we are all familiar with from school:
+Polnomials!</p>
+<p>Instead of writing tuples <code>(a , b)</code>, we choose to write
+<span class="math inline"><em>a</em> × <em>b</em></span>, and instead of
+sums such as <code>data Blah = Foo | Baz</code> we write <span
+class="math inline"><em>F</em><em>o</em><em>o</em> + <em>B</em><em>a</em><em>z</em></span>.
+Additionally, the empty tuple <code>()</code> is written as just <span
+class="math inline">1</span>. This seems strange maybe at first sight;
+however, when looking at finite types, you start to see the motivation:
+Consider <code>Bool</code> as a 2 element type. In this alternative
+notation we might write <code>Bool</code> as <span
+class="math inline">𝟚</span>. After some consideration you might see
+that the type <code>data Three = A Bool | B ()</code> has three possible
+values… so now the notation <span class="math inline">𝟛 = 𝟚 + 1</span>
+is starting to look very sensible indeed. (Consider what the type <span
+class="math inline">𝟚 × 𝟙</span> represents… no prizes for getting that
+it is equal to <span class="math inline">𝟚</span>)</p>
+<p>Now almost every data type in haskell can be written as a combination
+of products and sums (and function types (4*)), however, there is one
+thorny case to consider - and sadly or happily, i’m not sure… these
+outliers are the most intersting and usefull kinds of data types, namely
+recursive types.</p>
+<h2 id="recursive-data-types">Recursive data types</h2>
+<p>When we write a recursive data type such as <code>[a]</code> (defined
+for reference below), there doesn’t seem to be a good way to turn it
+into a simple combination of products and sums of existing types or type
+variables.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> [a] <span class="ot">=</span> [] <span class="op">|</span> (<span class="ot">::</span>) a [a]</span></code></pre></div>
+<p>(^^ not exactly real haskell)</p>
+<p>I am hoping the answer to this question of how to represent that data
+type mathmatically will give some insight onto why the foldr function
+works as it does and how you can derive similar functions for the data
+types you’ve cooked at home.</p>
+<p>So… the solution is to write a polnomial function!!</p>
+<p><span
+class="math inline"><em>L</em><em>i</em><em>s</em><em>t</em><sub><em>A</em></sub>(<em>X</em>) = 1 + <em>A</em> × <em>X</em></span></p>
+<p>For a fixed type <code>A</code>, this list is a polnomial function in
+1 variable, X. The reason why this is the right choice of polynomial is
+that if you imagined the type when you replace X with the desired
+recursive type, you get exactly the type you desire, <span
+class="math inline"><em>L</em><em>i</em><em>s</em><em>t</em>(<em>A</em>) = 1 + <em>A</em> × <em>L</em><em>i</em><em>s</em><em>t</em>(<em>A</em>)</span>.
+You might then recognise that the type we desire is a fixed point for
+this function (although it doesn’t matter if you have never encountered
+fix points before).</p>
+<p>We shall now go on to explain, using Haskell code, how the list type
+relates to this polynomial and how this relationship gives us the foldr
+function for free!</p>
+<h2 id="algebra-for-polynomials">Algebra for Polynomials:</h2>
+<p>First a quick definition. An algebra for one of our polnomial type
+functions (call it <code>F</code>) is a particular choice of type, call
+it <code>b</code>, and function: <code>F b -&gt; b</code>. Very simple
+so far!</p>
+<p>Unfolding this definition in particular for lists, this means we want
+a function: <span
+class="math display">1 + <em>a</em> * <em>b</em> → <em>b</em></span> Now
+take a moment to understand how each of the following types are
+equivalent to the type above (hint think about how you would define them
+all as functions in haskell):</p>
+<details>
+<summary>
+Spoilers
+</summary>
+universal property of coproducts (sum types)
+</details>
+<p><span
+class="math display">(1→<em>b</em>) × (<em>a</em>×<em>b</em>→<em>b</em>)</span></p>
+<details>
+<summary>
+Spoilers
+</summary>
+<code>() -&gt; a</code> is equivalent to just <code>a</code>. Can also
+think about the type in the exponential notation <span
+class="math inline"><em>a</em><sup>1</sup> = <em>a</em></span>
+</details>
+<p><span
+class="math display"><em>b</em> × (<em>a</em>×<em>b</em>→<em>b</em>)</span></p>
+<details>
+<summary>
+Spoilers
+</summary>
+currying right hand side of product
+</details>
+<p><span
+class="math display"><em>b</em> × (<em>a</em>→<em>b</em>→<em>b</em>)</span></p>
+<details>
+<summary>
+Spoilers
+</summary>
+we can happily swap the order of products
+</details>
+<p><span
+class="math display">(<em>a</em>→<em>b</em>→<em>b</em>) × <em>b</em></span></p>
+<p>For reasons that will become aparent very shortly (and you might
+already have spotted) this is the form of the type that we want.</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">ListAlgebra</span> a b <span class="ot">=</span> <span class="dt">ListAlgebra</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) b</span></code></pre></div>
+<p>We say that the haskell type <code>[a]</code> is the <em>initial</em>
+list algebra.</p>
+<p>Firstly, lets validate that there is a sensible definition of
+ListAlgebra for <code>[a]</code>:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ot">listListAlg ::</span> <span class="dt">ListAlgebra</span> a [a]</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>listListAlg <span class="ot">=</span> <span class="dt">ListAlgebra</span> (<span class="ot">::</span>) []</span></code></pre></div>
+<p>This feels like a very sensible definition - which is always a good
+sign.</p>
+<p>Now onto what it means for something to be an initial algebra. An
+algebra is initial when there is a map from it to any other arbritary
+algebra. (*2)</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ot">listListAlgInit ::</span> <span class="dt">ListAlgebra</span> a b <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>listListAlgInit (<span class="dt">ListAlgebra</span> _ empty) [] <span class="ot">=</span> empty</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>listListAlgInit (<span class="dt">ListAlgebra</span> app empty) (x<span class="op">:</span>xs) <span class="ot">=</span> app x (listListAlgInit (<span class="dt">ListAlgebra</span> app empty) xs)</span></code></pre></div>
+<p>(*3)</p>
+<p>We can read the above type as for any listAlgebra <code>b</code>
+there is a function from <code>[a]</code> to <code>b</code>.</p>
+<p>Et voila. We only have to a simple bit of rearranging and unfolding
+and currying to get to the fact that this type is equivalent to
+<code>foldr :: (a -&gt; b -&gt; b) -&gt; b -&gt; [a] -&gt; b</code>.</p>
+<p>Hopefully this helps understanding and motivating the foldr function
+and was interesting :)</p>
+<p>Also note that we can pull this trick for any haskell data type we
+like and find the ‘natural’ ‘fold’ function by looking at it’s type of
+algebras. Maybe looking at the natural numbers and deriving the fold
+function for them could be a useful exersize.</p>
+hint: natural numbers are defined by the polynomial:
+<details>
+<summary>
+hint
+</summary>
+<p><span
+class="math inline"><em>F</em>(<em>X</em>) = 1 + <em>X</em></span></p>
+</details>
+<h3 id="an-extra-a-lazy-thorn-in-the-side">An extra: A lazy thorn in the
+side</h3>
+<p>Lazyness in Haskell has a way of making the above story unfortunately
+slightly untrue :( The particular gadget we have been talking about in
+full technicality are <a
+href="https://ncatlab.org/nlab/show/initial+algebra+of+an+endofunctor">initial
+algebras of polynomial endofunctors</a>. But if you define a function
+using foldr on an infinite list, haskell won’t be happy with you. The
+reason for this is that laziness in haskell in a sense conflates
+inductive and coinductive data types. A list in haskell can be both a
+list or a stream. Most other languages either don’t have these infinite
+(coinductive) data types or choose to explicitely seperate when a data
+type can be infinite (total languages such as agda and idris and lean)
+often by being able to define <code>data SuchAndSuch ...</code> and
+<code>codata CoSuchAndSuch ...</code>. Semantically this can be achieved
+using the categorical dual to initial algebras, the creatively named
+final coalgebras. To go into detail is too much here but more info can
+be found at <a
+href="https://ncatlab.org/nlab/show/terminal+coalgebra+for+an+endofunctor">the
+nlab</a>. <a
+href="http://blog.sigfpe.com/2007/07/data-and-codata.html">This blog
+post</a> is also a very interesting read on the topic.</p>
+<h3 id="technical-details">Technical details:</h3>
+<p>(*1): If you want to learn more about this I would reccomend looking
+up category theory and in particular trying to understand what it means
+when a category is (bi)cartesian closed. In category theory speak tuples
+correspond to finite products, sum types to finite coproducts and
+function types to exponential objects. If you are interested in category
+theory, I am always happy to chat about it in the discord :) - it’s my
+favorite topics in maths/cs.</p>
+<p>(*2): We can actually show that this is the only reasonable
+definition (up to unique isomorphism). This happens because we really
+want to place more restrictions on the type of map that counts as a map
+of F-algebras <a
+href="https://ncatlab.org/nlab/show/algebra+for+an+endofunctor">more
+detail here</a>. We also would need to show that the map witnessing
+initiality is unique (up to unique isomorphism). It is possible (by <a
+href="https://en.wikipedia.org/wiki/Abstract_nonsense">generalised
+abstract nonsense</a>) to show that the uniqueness of this map gives us
+the uniqueness of the initial algebra.</p>
+<p>(*3): This could be equally - or arguably better-ly - implemented as
+a haskell typeclass, getting rid of a lot of noise in the definition.
+But keeping it simple with a datatype seemed like a reasonable
+tradeoff.</p>
+<p>(*4): Function types are written as exponentials in this notation
+<code>a -&gt; b</code> corresponds to <span
+class="math inline"><em>b</em><sup><em>a</em></sup></span>. Again, it is
+worth verifying to yourself why this is the case by using finite types
+as intuition. E.g. how many functions are there from Bool to Bool.</p>

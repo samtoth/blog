@@ -30,7 +30,7 @@ jobs:
         id: build
         run: |
           mkdir dist/
-          echo "Testing testing 123" > dist/index.html
+          cp -a test.html dist/index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
