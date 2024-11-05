@@ -29,7 +29,7 @@ jobs:
       - name: Build static files
         id: build
         run: |
-          nix build
+          nix build --accept-flake-config
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
