@@ -1,23 +1,22 @@
 ---
+title: Samuel Toth
 desc: "Landing page for personal site"
 lang: "en"
-stylesheet: "default"
-title: "Hello, world!"
 ---
-
-<header>
-  <h1>Hello, world!</h1>
-</header>
-<main>
-  <section>
-    <h2>Blog Posts</h2>
-    <ul>
-      $for(posts)$
-        <li>
-          <div><a href=".$url$">$title$</a></div>
-          <small>$date$</small>
-        </li>
-      $endfor$
-    </ul>
-  </section>
-</main>
+<section>
+  <p>
+    Hello! I am a Computer Scientist with an interest in Functional Programming, Proof Assistants and Categories. I am currently a student a the University of Nottingham, but in my free time (and past life) I play the trombone and write music. On this site you can find a mix of blog posts and some current projects I am working on
+    :)
+  </p>
+</section>
+<section>
+  <h2>Blog Posts</h2>
+  <ul>
+    $for(posts)$
+      <li>
+        <div><a href=".$url$">$title$</a></div>
+        <small>$date$</small>
+      </li>
+    $endfor$
+  </ul>
+</section>

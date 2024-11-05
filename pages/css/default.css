@@ -1,0 +1,41 @@
+
+body {
+  font-family: "Noto Serif", serif;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+
+  margin: 50pt;
+  color: #10263B;
+  background-color: #FAF6EF;
+  display: grid;
+  grid-template-columns: 20% 1fr 20%;
+}
+
+
+a:visited {
+  color: inherit;
+}
+
+navigation {
+  text-align: left;
+  grid-column: 1;
+  grid-row: 2;
+  padding-left: 10%;
+  top: 50pt;
+  align-self: start;
+  position: sticky;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  grid-column: 2;
+}
+
+main {
+  grid-column: 2;
+}

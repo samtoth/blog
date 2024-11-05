@@ -29,8 +29,7 @@ jobs:
       - name: Build static files
         id: build
         run: |
-          mkdir dist/
-          cp -a test.html dist/index.html
+          nix build
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -39,7 +38,7 @@ jobs:
         id: deployment
         uses: actions/upload-pages-artifact@v3 # or specific "vX.X.X" version tag for this action
         with:
-          path: dist/
+          path: result/dist/
 
   # Deployment job
   deploy:

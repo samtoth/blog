@@ -1,25 +1,25 @@
-
 ---
 author: "Samuel Toth"
-desc: "Explanation of foldr categorically"
 keywords: "hakell, categories"
 lang: "en"
 title: "Foldr, datatypes and (scary sounding but not so scary) F-algebras"
+desc: "Explanation of foldr categorically"
+date: "2024-06-02"
 ---
 
-# Foldr, datatypes and (scary sounding but not so scary) F-algebras
+<!-- # Foldr, datatypes and (scary sounding but not so scary) F-algebras -->
 
 ## Recap on Haskell data types and polynomials
 
 As we learnt in the lectures, Haskell has a feature called algabraic data types. What this means is that there are product types, the tuples (including the empty tuple `()`), as well as sum types, written in Haskell with the bar notation `data MyType = A | B`.
-They can be thought of as something like an 'or' type.(*1)
+They can be thought of as something like an 'or' type.[^1]
 
 There exists an alternative notation for data types which hints at a suggestion to something we are all familiar with from school: Polnomials!
 
 Instead of writing tuples `(a , b)`, we choose to write $a \times b$, and instead of sums such as `data Blah = Foo | Baz` we write
 $Foo + Baz$. Additionally, the empty tuple `()` is written as just $1$. This seems strange maybe at first sight; however, when looking at finite types, you start to see the motivation: Consider `Bool` as a 2 element type. In this alternative notation we might write `Bool` as $\mathbb{2}$. After some consideration you might see that the type `data Three = A Bool | B ()` has three possible values... so now the notation $\mathbb{3} = \mathbb{2} + 1$ is starting to look very sensible indeed. (Consider what the type $\mathbb{2} \times \mathbb{1}$ represents... no prizes for getting that it is equal to $\mathbb{2}$)
 
-Now almost every data type in haskell can be written as a combination of products and sums (and function types (4*)), however, there is one thorny case to consider - and sadly or happily, i'm not sure... these outliers are the most intersting and usefull kinds of data types, namely recursive types.
+Now almost every data type in haskell can be written as a combination of products and sums (and function types [^4]), however, there is one thorny case to consider - and sadly or happily, i'm not sure... these outliers are the most intersting and usefull kinds of data types, namely recursive types.
 
 ## Recursive data types
 
@@ -97,14 +97,14 @@ listListAlg = ListAlgebra (::) []
 This feels like a very sensible definition - which is always a good sign.
 
 Now onto what it means for something to be an initial algebra. An algebra is initial when there is a map from it
-to any other arbritary algebra. (*2)
+to any other arbritary algebra. [^2]
 
 ```haskell
 listListAlgInit :: ListAlgebra a b -> [a] -> b
 listListAlgInit (ListAlgebra _ empty) [] = empty
 listListAlgInit (ListAlgebra app empty) (x:xs) = app x (listListAlgInit (ListAlgebra app empty) xs)
 ``` 
-(*3)
+[^3]
 
 We can read the above type as for any listAlgebra `b` there is a function from `[a]` to `b`.
 
@@ -128,14 +128,14 @@ Lazyness in Haskell has a way of making the above story unfortunately slightly u
 The particular gadget we have been talking about in full technicality are [initial algebras of polynomial endofunctors](https://ncatlab.org/nlab/show/initial+algebra+of+an+endofunctor). But if you define a function using foldr on an infinite list, haskell won't be happy with you. The reason for this is that laziness in haskell in a sense conflates inductive and coinductive data types. A list in haskell can be both a list or a stream. Most other languages either don't have these infinite (coinductive) data types or choose to explicitely seperate when a data type can be infinite (total languages such as agda and idris and lean) often by being able to define `data SuchAndSuch ...` and `codata CoSuchAndSuch ...`. Semantically this can be achieved using the categorical dual to initial algebras, the creatively named final coalgebras. To go into detail is too much here but more info can be found at [the nlab](https://ncatlab.org/nlab/show/terminal+coalgebra+for+an+endofunctor). [This blog post](http://blog.sigfpe.com/2007/07/data-and-codata.html) is also a very interesting read on the topic.
 
 ### Technical details:
-(*1): If you want to learn more about this I would reccomend looking up category theory and in particular trying to understand what it means when a category is (bi)cartesian closed. In category theory speak tuples correspond to finite products, sum types to finite coproducts and function types to exponential objects. If you are interested in category theory, I am always happy to chat about it in the discord :) - it's my favorite topics in maths/cs.
+[^1]: If you want to learn more about this I would reccomend looking up category theory and in particular trying to understand what it means when a category is (bi)cartesian closed. In category theory speak tuples correspond to finite products, sum types to finite coproducts and function types to exponential objects. If you are interested in category theory, I am always happy to chat about it in the discord :) - it's my favorite topics in maths/cs.
 
 
-(*2): We can actually show that this is the only reasonable definition (up to unique isomorphism). This happens because we really want to place more restrictions on the type 
+[^2]: We can actually show that this is the only reasonable definition (up to unique isomorphism). This happens because we really want to place more restrictions on the type 
 of map that counts as a map of F-algebras [more detail here](https://ncatlab.org/nlab/show/algebra+for+an+endofunctor). We also would need to show that the map witnessing initiality is unique (up to unique isomorphism).
 It is possible (by [generalised abstract nonsense](https://en.wikipedia.org/wiki/Abstract_nonsense)) to show that the uniqueness of this map gives us the uniqueness of the initial algebra.
 
-(*3): This could be equally - or arguably better-ly - implemented as a haskell typeclass, getting rid of a lot of noise in the definition.
+[^3]: This could be equally - or arguably better-ly - implemented as a haskell typeclass, getting rid of a lot of noise in the definition.
 But keeping it simple with a datatype seemed like a reasonable tradeoff.
 
-(*4): Function types are written as exponentials in this notation `a -> b` corresponds to $b^a$. Again, it is worth verifying to yourself why this is the case by using finite types as intuition. E.g. how many functions are there from Bool to Bool.
+[^4]: Function types are written as exponentials in this notation `a -> b` corresponds to $b^a$. Again, it is worth verifying to yourself why this is the case by using finite types as intuition. E.g. how many functions are there from Bool to Bool.

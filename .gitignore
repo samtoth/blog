@@ -3,3 +3,4 @@ _build
 .envrc
 result
 **/*.agdai
+dist/

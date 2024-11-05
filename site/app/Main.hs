@@ -3,6 +3,7 @@ import Hakyll
 import Data.Maybe (fromMaybe)
 import Data.List (isPrefixOf, isSuffixOf)
 import System.FilePath (takeFileName)
+import qualified Text.Pandoc as PD
 
 
 config :: Configuration
@@ -26,12 +27,33 @@ config =
       where
         fileName = takeFileName path
 
+pandocCompiler' = pandocCompilerWith defaultHakyllReaderOptions
+    defaultHakyllWriterOptions
+
 main :: IO ()
 main = hakyllWith config $ do
+
+  match "templates/*" $ compile templateBodyCompiler
+
+  match ( "css/*" .||. "css/**/*") $ do
+        route  $ gsubRoute "css/" (const "") `composeRoutes` setExtension "css"
+        compile compressCssCompiler
+
+  match "posts/*" $ do
+      route $ setExtension "html" -- blogRoutePrefix $ gsubRoute "pages/" (const "") `composeRoutes` setExtension "html"
+      compile $ do
+        -- tpl <- loadBody "templates/post.html"
+        pandocCompiler'
+          -- >>= loadAndApplyTemplate "templates/page-body.html" defaultContext
+          >>= loadAndApplyTemplate "templates/default.html" postCtx
+          >>= relativizeUrls
+
   match "index.html" $ do
     route idRoute
     compile $ do
-      posts <- recentFirst =<< loadAll "/posts/*"
+      -- posts <- recentFirst =<< loadAll "posts/*" -- issue with UTC time here
+      posts <- loadAll "posts/*"
+
 
       let indexCtx =
               listField "posts" postCtx (return posts)
@@ -42,7 +64,8 @@ main = hakyllWith config $ do
 
       getResourceBody
           >>= applyAsTemplate indexCtx
-          >>= loadAndApplyTemplate "/templates/default.html" indexCtx
+          >>= loadAndApplyTemplate "templates/default.html" indexCtx
+          >>= relativizeUrls
 
 
 mySiteName :: String
@@ -80,6 +103,7 @@ postCtx =
     <> constField "feedTitle" myFeedTitle
     <> constField "siteName" mySiteName
     <> dateField "date" "%Y-%m-%d"
+    -- <> constField "desc" "Uh oh"
     <> defaultContext
 
 titleCtx :: Context String

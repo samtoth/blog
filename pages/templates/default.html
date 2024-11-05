@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="$lang$">
+<html lang="en">
   <head>
     <title>$title$</title>
 
@@ -40,14 +40,38 @@
     <link rel="shortcut icon" href="/favicon.ico">
     <link rel="canonical" href="$root$$url$">
 
-    <link rel="alternate" href="./atom.xml" title="$feedTitle$" type="application/atom+xml">
-    <link rel="alternate" href="./rss.xml" title="$feedTitle$" type="application/rss+xml">
+    <!-- <link rel="alternate" href="./atom.xml" title="$feedTitle$" type="application/atom+xml">
+    <link rel="alternate" href="./rss.xml" title="$feedTitle$" type="application/rss+xml"> -->
 
-    <link rel="stylesheet" href="./css/default.css" />
-    <link rel="stylesheet" href="./css/code.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/default.css" />
+    <link rel="stylesheet" href="/Agda.css" />
   </head>
   <body>
-    $body$
-    <script defer src="./js/script.js"></script>
+    <navigation>
+      <a href="/index.html">Home</a>
+      <!-- $if(posts)$
+        Posts
+        <ul>
+          $-for(posts)$
+          <li>
+            <a href=".$url$">$title$</a>
+          </li>
+          $-endfor$
+        </ul>
+      $endif$ -->
+    </navigation>
+    <header>
+      <h1>
+        $title$
+      </h1>
+    </header>
+    <main>
+      $body$
+    </main>
+    <!-- <script defer src="./js/script.js"></script> -->
   </body>
 </html>
