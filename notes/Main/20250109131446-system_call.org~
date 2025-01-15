@@ -1,0 +1,26 @@
+:PROPERTIES:
+:ID:       CC0B0496-E004-4729-8E9D-14003F8CB3D5
+:END:
+#+title: System-call
+
+System calls are how programs request services from the operating system
+
+
+E.g:
+ - Requesting memory
+ - Accessing files
+ - Running processes
+ - Accessing concurrency features
+
+
+System calls are implemented using[[id:6FD5E91E-37D3-44D9-9FCD-1B44B3E6E58A][ Interrupts]].
+
+The system call ID and parameters are stored in designated registers. And then an interrupt is triggered. (instruction sometimes referred to as a trap)
+
+The interrupt is handled by a specific system call routine in kernel mode code.
+
+It then returns to running some user code - or getting on with doing something useful.
+
+Sys-calls are a chance for operating system to get on with doing useful things that it needs to do.
+
+Needs to be very efficient as sys-calls happen all the time.

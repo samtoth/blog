@@ -1,0 +1,64 @@
+:PROPERTIES:
+:ID:       53D1322E-3545-4208-BD27-112413747576
+:END:
+#+title: osc-intro
+
+* Intro to OSC: Lectures 1, 2 and 3
+
+** OSC Intro lecture 1: Intro
+
+Operating systems need to be fast. Unlike in many other disciplines e.g. software engineering	 
+
+Concurrency poses many questions
+ * Practical problems
+   + many different possible orders of execution
+   + Difficult to program. Race conditions, general concurrency bugs
+ * Theoretical issues
+   + Many open problems in the theory
+   + Still don't have a good (agreed upon) theoretical model of concurrency
+
+Operating deals with:
+
+  + File systems
+  + Device indendance - abstraction from hardware
+  + Multi-programming
+  + Security
+  + Memory management
+    - virtual memory
+    - shared memory in multiprogramming
+  +[[id:59AB3014-4436-4CEA-9E4C-B4E031B6202D][ Kernel-mode]]/user mode - stops users from easily crashing a machine. "Fencing" you in.
+
+** OSC - Intro lecture 2
+
+Search for speed up
+
+1. superscalar CPU
+ - A super scalar CPU provides instruction level parallelism (i.e. multiple fetch, decode and execution pipelines happenening simulataneously
+2. Out-of-order execution
+3. Speculative evaluation
+...
+
+And many more.
+
+*MORAL OF THE STORY*
+  _"be careful about the assumptions you make about the CPU behaviour"_
+
+Try and imagine the worst case scenario.
+
+** Memory management
+
+Each process has a local address space that does not necessarily correspond exactly with the real address space.
+
+In the most simple case the memory management unit stores a table of the offsets where the program memory starts. And then when the instruction asks for memory at address $x$, then the cpu will fetch it from $x + \textrm{offset}$.
+
+ 
+** OSC - Intro Lecture 3
+
+[[id:6FD5E91E-37D3-44D9-9FCD-1B44B3E6E58A][Interrupts]] are the CPU's mechanism for dealing with events
+
+[[id:CC0B0496-E004-4729-8E9D-14003F8CB3D5][System-calls]] are used for the user programs to access the operating system/[[id:59AB3014-4436-4CEA-9E4C-B4E031B6202D][Kernel-mode]] features or services.
+
+An API sits on top of the system calls normally to provide user code a sensible/usable interface for  programmers to use.
+
+Not 1-2-1, an API call may invoke many or no sys-calls.
+

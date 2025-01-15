@@ -1,0 +1,25 @@
+:PROPERTIES:
+:ID:       278ACFB7-E89A-48DE-9721-917DAFE56936
+:END:
+#+title: Multi-programming
+
+Multi-programming in the context of a single processor system, is the art of making it seem like multiple processes are running.
+
+Achieved by *interleaving* execution of processes, dividing CPU into time slices.
+
+*Context-switching* is the procedure by which this is achieved.
+
+ - Save the current state of a process to the[[id:F857D8AD-72A5-423B-A5A8-5ACDF6FB2567][ PCB]]. Including updating state machine
+ - Record PID in appropriate queue (ready/blocked)
+ - Run a scheduler to figure out which process should go next
+ - Update the state of new PCB
+ - Load the new PCB.
+ - Restart running of the process (return control)
+
+Two useful metrics:
+ - *Response time* is the time from a process being created and first getting on the cpu
+ - *effective utilization*, the fraction of tiime that a cpu is executing processes (as opposed to e.g. context switching)   
+
+Theres a trade off.
+ - Short time slices = quick response time but low utilization
+ - Longer time slices = slow response time but high utilization

@@ -1,0 +1,8 @@
+:PROPERTIES:
+:ID:       7D3B93D6-B76D-4A22-A04B-CFBB81D296A3
+:END:
+#+title: process-schedulers
+
+There are many different choices to be made in designing a process scheduler algorithm. Not necesarrily a single best choice.
+
+One influence on the type of algorithm is the type of operating system. (e.g. real-time vs batch)

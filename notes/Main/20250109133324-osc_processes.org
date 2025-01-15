@@ -1,0 +1,57 @@
+:PROPERTIES:
+:ID:       5A17678E-E2EF-4345-8250-3921B731190C
+:END:
+#+title: OSC-processes
+
+Operating System and Concurrency: *Processes*
+
+
+- PID: Process ID
+- [[id:F857D8AD-72A5-423B-A5A8-5ACDF6FB2567][PCB]]: Process Control Block - reponsible for storing all the information of a currenly running process. E.g. current memory, current instruction, files it has open etc.
+- Process Table: Just an array of PCB's
+
+
+
+
+[[attachment:Process-memory.png]]
+
+Stack grows down, Heap grows up
+
+Stack - Literally a stack data structure. Stores local variables/ handles function calls
+-----
+...
+...
+
+
+...
+...
+Heap - Dynamically request chunks of memory i.e using malloc
+----
+Data - Global variables
+----
+TEXT - The code
+
+** Process state machine 
+
+6 states:
+- *New* - has it's PCB, might not be in memory/ready to go
+- *Ready* - Is waiting to be executed by the cpu
+- *Running* - Currently being executed by the CPU
+- *Blocked* - Blocked on something e.g. IO
+- *Terminated* - Process no longer able to be executed
+- *Suspended* - Not needed for this course
+
+Uses various Queues to control state transitions. Ready queues, and event queues. 
+
+[[attachment:Process-state-transition-graph.png]]
+
+[[id:278ACFB7-E89A-48DE-9721-917DAFE56936][Multi-programming]] is used in single processor systems to simulate hardware level paralelism 
+
+An operating systen containsmaintains many tables detailing the current state of resources and proceses e.g.:
+ - Process tables: seen already. (containing[[id:F857D8AD-72A5-423B-A5A8-5ACDF6FB2567][ PCB]]s)
+ - Memory tables
+ - IO tables
+ - File tables
+
+Often cross-references to speed up indexing of data.
+

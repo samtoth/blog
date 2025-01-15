@@ -1,0 +1,137 @@
+:PROPERTIES:
+:ID:       F888A337-71B0-4C11-A4D7-EDC8E0FB6EB0
+:END:
+#+title: threads
+
+topics:
+ - threads vs processes
+ - different thrad implementations
+ - PThreads (=posix threads)
+
+** Motivation
+   
+A process has two *fundamental units*:
+ - *Resources*: address space containing program, data, _heap_. Files, IO devices/chanels etc.
+ - *Execution trace*: For running the process on a cpu
+
+We might want a process to share it's resources between multiple execution traces. So we introduce an abstraction for this. Called threads!
+
+
+** Threads vs Processes
+
+Threads share data, code and file handlers.
+ - Have their own stack, registers and program counter (execution trace). Called _execution context_
+
+Threads have similar '_things_' as processes, similar state machine, Thread control block, thread table, Thread Id (Like PCB, and PID etc.)
+
+Threads have *less overhead* for creating/switching/terminating
+ - No need for protecting threads memory from one-another
+
+Modern systems have hardware support for threading. 
+
+Interthread communication much easier than interprocess 
+ - But this comes with danger. Synchronising access to data
+     *DANGER* ^ this is very complicated/causes issues e.g. deadlocks
+
+*** When are threads useful?
+- In applications with lots of blocking IO/tasks. (Or if lots of memory access - can result in page faults causing blocking)
+- Examples
+  + Almost all graphical applications
+  + Webservers
+
+
+** User-threads vs kernel-threads
+
+*** User threads
+
+The idea is we can actually implement thrading entirely in user-space.
+
+Where a user-space program manages creation, termination, management of threads.
+
+Implemented as a library, it keeps a thread table in it's memory.
+
+To the kernel, they are just single threaded processes.
+
+- Advantages
+ + Threads in User mode. No mode switch: kernel <-> user mode
+ + OS independent implementation
+ + Control over scheduler
+- Disadvantages
+ + !! Prone to stalling, no way of doing pre-emptive scheduling. 
+ + So blocking system calls jam up all 'threads'
+ + No true parallelism - even if device supports it
+
+*** Kernel threads
+
+Kernel manages threads and gives user programs control through system calls / APIs.
+
+Thread table in the kernel
+
+- Advantages
+  + True parallelism if hardware supports
+  + Pre-emptive - blocking tasks or infinite loops won't jam up other threads
+  + No run-time system tracking threads is needed
+- Disadvantage (minor)
+  + Frequent mode switches - can decrease performance, but not usually worth the disadvantages of user threads 
+
+This is generally the better approach. Modern operating systems generally use this (e.g. Windows, Linux)     
+
+*** Measuring thread and process performance
+
+Null fork - is just creating a fork, then cleaning it up.
+	User-thread < kernel-threads << Process
+Signal wait - Doing thread synchronisation
+	User thread < kernel-threads < Process
+
+!! ^ But this isn't the most important metric - user threads are cheaper to create but this doesn't outweigh the advantages
+
+*** Hybrid threading
+
+Mixing kernel and user threads. Especially useful if you need _lots_ of threads and you know that some won't be blocking
+
+
+** Threading APIs
+
+Thread libraries provide an interface for managing threads (creating, running, destroying, synching etc.)
+
+examples include:
+ - *Posix PThreads* - not actually a library but a specification
+ - Windows Threads
+ - Java Threads
+
+(note that PThread can be implemented as user or kernel threads)
+
+in posix:
+
+~pthread_create~, ~pthread_exit~ and ~pthread_join~.
+
+Example:
+
+#+BEGIN_SRC C
+   #include <pthread.h>
+   #include <stdio.h>
+   #define THREADS 10
+
+   void* hello(void* arg) {
+     printf("Hello from thread %d\n", *((int*)arg));
+     return 0;
+   }
+
+   int main() {
+     int args[THREADS] = { 0 };
+     pthread_t threads[THREADS];
+
+     for(int i = 0; i < THREADS; i++) {
+       args[i] = i; // see remark 1
+       if(pthread_create(threads + i, NULL, hello, args + i)) {
+         printf("Creating thread %d failed\n", i);
+         return -1;
+       }
+     }
+     for(int i = 0; i < THREADS; i++)
+       pthread_join(threads[i], NULL);
+   }
+
+#+END_SRC
+
+Remark 1. Note that we are forced to pass the argument as a reference (not as a value), and so we should store the value of i at that time, because the thread may not be created immediately.

@@ -1,0 +1,11 @@
+:PROPERTIES:
+:ID:       F857D8AD-72A5-423B-A5A8-5ACDF6FB2567
+:END:
+#+title: PCB
+
+Stores the state of a currently active process.
+
+Contain three types of attributes:
+ - *Process identification*: including PID, U(ser)ID, Parent Pid
+ - *Process control info*: proccess state (from state machine), scheduling information
+ - Process state info:

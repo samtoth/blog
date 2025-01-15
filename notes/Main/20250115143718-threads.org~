@@ -1,0 +1,25 @@
+:PROPERTIES:
+:ID:       F888A337-71B0-4C11-A4D7-EDC8E0FB6EB0
+:END:
+#+title: threads
+
+topics:
+ - threads vs processes
+ - different thrad implementations
+ - PThreads (=posix threads)
+
+
+
+## Threads vs Processes
+
+Threads share data, code and file handlers.
+ - Have their own stack, registers and program counter. Called _execution context_
+
+Threads have similar '_things_' as processes, similar state machine, Thread control block, thread table, Thread Id (Like PCB, and PID etc.)
+
+Threads have less overhead for creating/switching/terminating
+ - No need for protecting threads memory from one-another
+Interthread communication much easier than interprocess 
+ - But this comes with danger. Synchronising access to data
+**DANGER** ^ this is very complicated/causes issues e.g. deadlocks
+

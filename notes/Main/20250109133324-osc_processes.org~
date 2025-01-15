@@ -1,0 +1,13 @@
+:PROPERTIES:
+:ID:       5A17678E-E2EF-4345-8250-3921B731190C
+:END:
+#+title: OSC-processes
+
+Operating System and Concurrency: *Processes*
+
+
+PID - Process ID
+PCB - Process Control Block - reponsible for storing all the information of a currenly running process. E.g. current memory, current instruction, files it has open etc.
+Process Table - Just an array of PCB's
+
+

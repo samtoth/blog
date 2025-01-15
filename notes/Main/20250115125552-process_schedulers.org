@@ -1,0 +1,104 @@
+:PROPERTIES:
+:ID:       7D3B93D6-B76D-4A22-A04B-CFBB81D296A3
+:END:
+#+title: process-schedulers
+
+There are many different choices to be made in designing a process scheduler algorithm. Not necesarrily a single best choice.
+
+One influence on the type of algorithm is the type of operating system. (e.g. real-time vs. batch) (batch operating systems are kind of old fashioned)
+
+They are run very frequently so must be fast - and thus relatively simple.
+
+Invoked in a reponse to clock interrupts, IO interrupts or blocking sys calls.
+
+** Classification via time horizon
+
+There are long, medium and short term scheduling algorithms, but modern OS's don't tend to have the long term ones and short-term is the /default/ when talking about scheduling algorithms.
+
+
+** Preemptive vs non-preemptive
+
+(Most modern operating systems are preemptive)
+ - Non-preemptive: Processes are only interrupted if they ~yield~ themselves voluntarily.
+   + Vunerable to a processes hogging the CPU
+   + Windows 3.1 and DOS are examples
+ - Preemptive: Processes can be kicked off the CPU without needed to yield themselves volunatarily. (they still have this option tho)
+   + Prevents issue of monopolising (hogging) the cpu
+   + Often leads to additional context switching which creates additional overhead
+   + Most modern operating systems use this strategy  
+
+    
+ 
+
+** Criteria of success
+
+- User criteria
+  + Response time: minimise the time vetween creating a job and it first getting on the cpu
+  + Turnaround time: minimise time between job creation and deletion
+  + Predictability: Similar running time every time
+- System criteria
+  + Throughout: maximise number of jobs per hour
+  + *Fairness*:
+    - All processes getting a reasonably fair distribution of CPU time
+    - Starvation: Processes not being able to get onto CPU at all
+
+Fairness and throughput are somewhat conflicting design constraints, that need to be balanced.
+
+
+** Examples
+
+*** First come first served
+
+Non preemptive algo that has a strict queue, that does as the  name suggests.
+
+Advantages:
+  Positional fairness (debatable advantage) and easy to implement
+Disadvantages:
+  - Will favour long running processes over short ones. (could lead to starvation)
+  - Not best resource utilization
+    
+*** Shortest job first
+
+Another non-preemptive algorithm.
+Requires a heuristic for processing times.
+Orderes processes in order of expected time and then schedules the shortest one first
+
+- Advantages
+  + Given perfect heuristic, results in optimal turn around time
+- Disadvantage
+  + Starvation may occur for long processes (opposite of fcfs)
+  + Thus fairness and predictability may be compromised
+  + Need to know the processing times before hand
+
+*** round robin
+
+A preemptive variation of first come first served
+I.e. the processees are run in the order they are added to the queue *but* are forsibly interrupted after some predefined time-slice.
+
+- Advantages
+ + Better response time in comparison to non-preemptive algorithms
+ + Good for interactive systems (which essential all user-facting operating systems are)
+- Disadvantages:
+ + Increased context switching
+ + Favours CPU bound processes over IO processes. (CPU bound will use all their allocated time wheras IO bound will quickly block and give up their time on the CPU)
+ + Can regress to FCFS if most processes voluntarilly interrupt   
+
+Length of timeslice is a very important factor in this algorithm.
+
+Small time slice -> low response time - low effective utillization
+Biggerr time slice -> slower response time - higher effective utilization
+
+*** priority queue
+
+A preemptive algorithm that schedules process by priority.
+
+Multiple queues for high, then medium, then low priority.
+
+Does regular round robin but favours the higher priority queues.
+
+Advantages:
+ + inherits advantages of round robin
+ + But can solve the issue with IO bound jobs 
+Disadvantages:
+ + Low priority jobs can suffer from starvation (can be remedied with dynamic priorities)
+

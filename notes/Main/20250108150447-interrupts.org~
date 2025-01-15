@@ -1,0 +1,10 @@
+:PROPERTIES:
+:ID:       6FD5E91E-37D3-44D9-9FCD-1B44B3E6E58A
+:END:
+#+title: Interrupts
+
+Programs running on a CPU need to be able to respond to events. Interrupts are the CPU's mechanism for allowing the operating system to do this.
+
+
+Examples:
+- 
